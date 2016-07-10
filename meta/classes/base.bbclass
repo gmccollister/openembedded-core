@@ -136,15 +136,23 @@ python base_do_fetch() {
 
 addtask unpack after do_fetch
 do_unpack[dirs] = "${WORKDIR}"
-do_unpack[cleandirs] = "${@d.getVar('S', True) if d.getVar('S', True) != d.getVar('WORKDIR', True) else os.path.join(d.getVar('S', True), 'patches')}"
 python base_do_unpack() {
     src_uri = (d.getVar('SRC_URI', True) or "").split()
     if len(src_uri) == 0:
         return
 
+    rootdir = d.getVar('WORKDIR', True)
+
+    # Ensure that we cleanup ${S}/patches
+    # TODO: Investigate if we can remove
+    # the entire ${S} in this case.
+    s_dir = d.getVar('S', True)
+    p_dir = os.path.join(s_dir, 'patches')
+    bb.utils.remove(p_dir, True)
+
     try:
         fetcher = bb.fetch2.Fetch(src_uri, d)
-        fetcher.unpack(d.getVar('WORKDIR', True))
+        fetcher.unpack(rootdir)
     except bb.fetch2.BBFetchException as e:
         raise bb.build.FuncFailed(e)
 }
